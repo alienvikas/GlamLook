@@ -4,3 +4,4 @@ dist/
 backend/.env
 backend/uploads/
 *.log
+.claude/
