@@ -116,8 +116,9 @@ export default function ProfileScreen({ navigation }) {
         const fd = new FormData();
         Object.entries(form).forEach(([k, v]) => { if (v !== undefined) fd.append(k, v); });
         const filename = localAvatar.split('/').pop();
-        const ext = filename.split('.').pop();
-        fd.append('avatar', { uri: localAvatar, name: filename, type: `image/${ext}` });
+        const ext = filename.split('.').pop().toLowerCase();
+        const mimeType = ext === 'jpg' ? 'image/jpeg' : `image/${ext}`;
+        fd.append('avatar', { uri: localAvatar, name: filename, type: mimeType });
         updated = await authAPI.updateProfile(fd);
       } else {
         updated = await authAPI.updateProfile(form);

@@ -55,7 +55,10 @@ export const serviceAPI = {
 export const portfolioAPI = {
   getAll: (params) => api.get('/portfolio', { params }),
   getOne: (id) => api.get(`/portfolio/${id}`),
-  create: (data) => api.post('/portfolio', data),
+  create: (data) => {
+    const isFormData = data instanceof FormData;
+    return api.post('/portfolio', data, isFormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : {});
+  },
   update: (id, data) => api.put(`/portfolio/${id}`, data),
   remove: (id) => api.delete(`/portfolio/${id}`),
 };
@@ -68,6 +71,10 @@ export const paymentAPI = {
 
 export const dashboardAPI = {
   getStats: () => api.get('/dashboard/stats'),
+};
+
+export const aiAPI = {
+  chat: (message, history) => api.post('/ai/chat', { message, history }),
 };
 
 export default api;

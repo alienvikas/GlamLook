@@ -23,6 +23,7 @@ import AddPortfolioScreen from '../screens/portfolio/AddPortfolioScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
 import QRCodeScreen from '../screens/profile/QRCodeScreen';
 import PaymentsScreen from '../screens/payments/PaymentsScreen';
+import AIAssistantScreen from '../screens/ai/AIAssistantScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -88,6 +89,7 @@ export default function AppNavigator() {
             <Stack.Screen name="AddPortfolio" component={AddPortfolioScreen} />
             <Stack.Screen name="Payments" component={PaymentsScreen} />
             <Stack.Screen name="QRCode" component={QRCodeScreen} />
+            <Stack.Screen name="AIAssistant" component={AIAssistantScreen} />
           </>
         ) : (
           <>

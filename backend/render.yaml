@@ -24,3 +24,5 @@ services:
         value: 7d
       - key: MAX_FILE_SIZE
         value: "5242880"
+      - key: ANTHROPIC_API_KEY
+        sync: false

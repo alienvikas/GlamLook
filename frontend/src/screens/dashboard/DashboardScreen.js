@@ -73,6 +73,17 @@ export default function DashboardScreen({ navigation }) {
           <StatCard icon="star" label="Services" value="Active" color={Colors.gold} />
         </View>
 
+        {/* GlamAI Banner */}
+        <TouchableOpacity style={styles.aiBanner} onPress={() => navigation.navigate('AIAssistant')} activeOpacity={0.85}>
+          <LinearGradient colors={['#9C27B0', '#C2185B']} style={styles.aiBannerGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+            <View style={styles.aiBannerLeft}>
+              <Text style={styles.aiBannerTitle}>✨ GlamAI Assistant</Text>
+              <Text style={styles.aiBannerSub}>Ask about clients, revenue & get makeup tips</Text>
+            </View>
+            <Ionicons name="chatbubble-ellipses" size={32} color="rgba(255,255,255,0.8)" />
+          </LinearGradient>
+        </TouchableOpacity>
+
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Upcoming Appointments</Text>
@@ -175,4 +186,10 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', marginBottom: 6,
   },
   actionLabel: { fontSize: 10, color: Colors.text, textAlign: 'center', fontWeight: '600' },
+
+  aiBanner: { marginBottom: Spacing.md, borderRadius: BorderRadius.lg, overflow: 'hidden', elevation: 3, shadowColor: Colors.secondary, shadowOpacity: 0.3, shadowOffset: { width: 0, height: 2 }, shadowRadius: 6 },
+  aiBannerGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: Spacing.md, paddingVertical: 14 },
+  aiBannerLeft: { flex: 1 },
+  aiBannerTitle: { color: Colors.white, fontWeight: '800', fontSize: FontSize.md },
+  aiBannerSub: { color: 'rgba(255,255,255,0.8)', fontSize: FontSize.xs, marginTop: 2 },
 });

@@ -28,7 +28,7 @@ export default function AddPortfolioScreen({ navigation }) {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') { Alert.alert('Permission needed', 'Please allow photo access'); return; }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       allowsEditing: true,
       quality: 0.8,
     });
@@ -39,9 +39,13 @@ export default function AddPortfolioScreen({ navigation }) {
     if (!afterImage) { Alert.alert('Error', 'After photo is required'); return; }
     setLoading(true);
     try {
+      const getMime = (uri) => {
+        const ext = uri.split('.').pop().toLowerCase();
+        return ext === 'jpg' ? 'image/jpeg' : `image/${ext}`;
+      };
       const fd = new FormData();
-      fd.append('after', { uri: afterImage.uri, type: 'image/jpeg', name: 'after.jpg' });
-      if (beforeImage) fd.append('before', { uri: beforeImage.uri, type: 'image/jpeg', name: 'before.jpg' });
+      fd.append('after', { uri: afterImage.uri, type: getMime(afterImage.uri), name: 'after.jpg' });
+      if (beforeImage) fd.append('before', { uri: beforeImage.uri, type: getMime(beforeImage.uri), name: 'before.jpg' });
       if (form.client_id) fd.append('client_id', form.client_id);
       if (form.title) fd.append('title', form.title);
       if (form.description) fd.append('description', form.description);
