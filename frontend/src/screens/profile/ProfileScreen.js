@@ -14,7 +14,7 @@ import Input from '../../components/Input';
 import Card from '../../components/Card';
 import { Colors, Spacing, FontSize, BorderRadius } from '../../theme/colors';
 
-const API_BASE = 'http://192.168.31.156:5000';
+const API_BASE = 'https://glambook-backend-zqzt.onrender.com';
 
 // ── Change Password Modal ────────────────────────────────────────────────────
 function ChangePasswordModal({ visible, onClose }) {
