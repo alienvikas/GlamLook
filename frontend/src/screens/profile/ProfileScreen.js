@@ -15,6 +15,8 @@ import Card from '../../components/Card';
 import { Colors, Spacing, FontSize, BorderRadius } from '../../theme/colors';
 
 const API_BASE = 'https://glambook-backend-zqzt.onrender.com';
+// Cloudinary returns full https URLs; legacy local uploads start with /uploads/
+const resolveUrl = (url) => (!url ? null : url.startsWith('http') ? url : `${API_BASE}${url}`);
 
 // ── Change Password Modal ────────────────────────────────────────────────────
 function ChangePasswordModal({ visible, onClose }) {
@@ -154,7 +156,7 @@ export default function ProfileScreen({ navigation }) {
   };
 
   const initials = artist?.name?.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase();
-  const avatarUri = localAvatar || (artist?.avatar_url ? `${API_BASE}${artist.avatar_url}` : null);
+  const avatarUri = localAvatar || resolveUrl(artist?.avatar_url);
 
   return (
     <KeyboardAvoidingView

@@ -22,8 +22,9 @@ exports.getOne = async (req, res) => {
 exports.create = async (req, res) => {
   const { client_id, title, description, tags, is_public } = req.body;
   if (!req.files || !req.files.after) return res.status(400).json({ error: 'After photo is required' });
-  const after_url = `/uploads/${req.files.after[0].filename}`;
-  const before_url = req.files.before ? `/uploads/${req.files.before[0].filename}` : null;
+  // req.files[].path is the full Cloudinary secure URL
+  const after_url = req.files.after[0].path;
+  const before_url = req.files.before ? req.files.before[0].path : null;
   const tagsArr = tags ? (Array.isArray(tags) ? tags : tags.split(',').map(t => t.trim())) : [];
   const result = await db.query(
     'INSERT INTO portfolio_items (artist_id, client_id, title, description, before_url, after_url, tags, is_public) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *',

@@ -48,7 +48,8 @@ exports.getMe = async (req, res) => {
 
 exports.updateProfile = async (req, res) => {
   const { name, phone, bio, specialties, instagram, facebook, website } = req.body;
-  const avatar_url = req.file ? `/uploads/${req.file.filename}` : undefined;
+  // req.file.path is the full Cloudinary secure URL
+  const avatar_url = req.file ? req.file.path : undefined;
 
   const fields = [];
   const values = [];

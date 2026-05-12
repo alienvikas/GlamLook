@@ -2,11 +2,6 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const fs = require('fs');
-
-// Ensure uploads directory exists (Render ephemeral filesystem won't have it)
-const uploadsDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
 const authRoutes = require('./routes/auth');
 const clientRoutes = require('./routes/clients');

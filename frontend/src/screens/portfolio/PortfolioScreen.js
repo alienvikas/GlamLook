@@ -9,6 +9,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { portfolioAPI } from '../../services/api';
 import { Colors, Spacing, FontSize, BorderRadius } from '../../theme/colors';
 
+const API_BASE = 'https://glambook-backend-zqzt.onrender.com';
+const resolveUrl = (url) => (!url ? null : url.startsWith('http') ? url : `${API_BASE}${url}`);
+
 const { width } = Dimensions.get('window');
 const ITEM_SIZE = (width - Spacing.md * 2 - Spacing.sm) / 2;
 
@@ -34,7 +37,7 @@ export default function PortfolioScreen({ navigation }) {
   const renderItem = ({ item }) => (
     <View style={styles.gridItem}>
       <Image
-        source={{ uri: `http://192.168.31.156:5000${item.after_url}` }}
+        source={{ uri: resolveUrl(item.after_url) }}
         style={styles.image}
         resizeMode="cover"
       />
