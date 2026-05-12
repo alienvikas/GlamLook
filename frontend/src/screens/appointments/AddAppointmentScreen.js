@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Alert, KeyboardAvoidingView,
-  Platform, TouchableOpacity, ActivityIndicator, Modal,
+  Platform, TouchableOpacity, ActivityIndicator, Modal, TextInput,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { appointmentAPI, clientAPI, serviceAPI } from '../../services/api';
@@ -15,103 +14,94 @@ import { Colors, Spacing, FontSize, BorderRadius } from '../../theme/colors';
 
 // ─── Location Picker Modal ────────────────────────────────────────────────────
 function LocationPickerModal({ visible, onClose, onConfirm }) {
-  const mapRef = useRef(null);
-  const [marker, setMarker] = useState(null);
   const [address, setAddress] = useState('');
   const [locating, setLocating] = useState(false);
-
-  const INDIA_DEFAULT = { latitude: 20.5937, longitude: 78.9629, latitudeDelta: 10, longitudeDelta: 10 };
-
-  const reverseGeocode = async (coords) => {
-    try {
-      const res = await Location.reverseGeocodeAsync(coords);
-      if (res[0]) {
-        const { name, street, district, city, region } = res[0];
-        return [name || street, district || city, region].filter(Boolean).join(', ');
-      }
-    } catch {}
-    return `${coords.latitude.toFixed(5)}, ${coords.longitude.toFixed(5)}`;
-  };
-
-  const handleMapPress = async (e) => {
-    const coords = e.nativeEvent.coordinate;
-    setMarker(coords);
-    setAddress('Fetching address...');
-    const addr = await reverseGeocode(coords);
-    setAddress(addr);
-  };
 
   const handleMyLocation = async () => {
     setLocating(true);
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permission Denied', 'Location permission is needed to use this feature.');
+        Alert.alert('Permission Denied', 'Location permission is needed to detect your location.');
         return;
       }
       const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
       const coords = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
-      setMarker(coords);
-      mapRef.current?.animateToRegion({ ...coords, latitudeDelta: 0.01, longitudeDelta: 0.01 }, 500);
-      setAddress('Fetching address...');
-      const addr = await reverseGeocode(coords);
-      setAddress(addr);
-    } catch (err) {
-      Alert.alert('Error', 'Could not get your location. Please tap on the map to select manually.');
+      const res = await Location.reverseGeocodeAsync(coords);
+      if (res[0]) {
+        const { name, street, district, city, region } = res[0];
+        setAddress([name || street, district || city, region].filter(Boolean).join(', '));
+      } else {
+        setAddress(`${coords.latitude.toFixed(5)}, ${coords.longitude.toFixed(5)}`);
+      }
+    } catch {
+      Alert.alert('Error', 'Could not get your location. Please type it manually.');
     } finally {
       setLocating(false);
     }
   };
 
   const handleConfirm = () => {
-    if (!marker) { Alert.alert('No location', 'Please tap on the map or use your location first.'); return; }
-    onConfirm(address || `${marker.latitude.toFixed(5)}, ${marker.longitude.toFixed(5)}`);
+    if (!address.trim()) { Alert.alert('No location', 'Please enter or detect a location first.'); return; }
+    onConfirm(address.trim());
+    setAddress('');
     onClose();
   };
 
+  const handleClose = () => { setAddress(''); onClose(); };
+
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <View style={styles.mapModal}>
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
+      <View style={styles.locModal}>
         {/* Header */}
-        <View style={styles.mapHeader}>
-          <TouchableOpacity onPress={onClose} style={styles.mapClose}>
+        <View style={styles.locHeader}>
+          <TouchableOpacity onPress={handleClose}>
             <Ionicons name="close" size={24} color={Colors.text} />
           </TouchableOpacity>
-          <Text style={styles.mapTitle}>Pick Location</Text>
-          <TouchableOpacity onPress={handleMyLocation} style={styles.myLocBtn} disabled={locating}>
-            {locating
-              ? <ActivityIndicator size="small" color={Colors.primary} />
-              : <Ionicons name="locate" size={22} color={Colors.primary} />}
-          </TouchableOpacity>
+          <Text style={styles.locTitle}>Pick Location</Text>
+          <View style={{ width: 24 }} />
         </View>
 
-        <Text style={styles.mapHint}>Tap anywhere on the map to select a location</Text>
+        <View style={styles.locBody}>
+          {/* GPS Button */}
+          <TouchableOpacity style={styles.gpsBtn} onPress={handleMyLocation} disabled={locating}>
+            {locating ? (
+              <ActivityIndicator color={Colors.white} />
+            ) : (
+              <>
+                <Ionicons name="locate" size={22} color={Colors.white} />
+                <Text style={styles.gpsBtnText}>Use My GPS Location</Text>
+              </>
+            )}
+          </TouchableOpacity>
 
-        {/* Map */}
-        <MapView
-          ref={mapRef}
-          style={styles.map}
-          initialRegion={INDIA_DEFAULT}
-          onPress={handleMapPress}
-          showsUserLocation
-          showsMyLocationButton={false}
-        >
-          {marker && (
-            <Marker coordinate={marker} pinColor={Colors.primary} />
-          )}
-        </MapView>
+          <View style={styles.dividerRow}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>or type manually</Text>
+            <View style={styles.dividerLine} />
+          </View>
 
-        {/* Address + Confirm */}
-        <View style={styles.mapFooter}>
-          {address ? (
-            <View style={styles.addressRow}>
-              <Ionicons name="location" size={18} color={Colors.primary} />
-              <Text style={styles.addressText} numberOfLines={2}>{address}</Text>
+          {/* Manual text input */}
+          <Text style={styles.locLabel}>Address / Venue</Text>
+          <TextInput
+            style={styles.locInput}
+            placeholder="e.g. Client's home, 123 Main St, Mumbai..."
+            placeholderTextColor={Colors.placeholder}
+            value={address}
+            onChangeText={setAddress}
+            multiline
+            numberOfLines={3}
+            textAlignVertical="top"
+          />
+
+          {address.length > 0 && (
+            <View style={styles.previewRow}>
+              <Ionicons name="location" size={16} color={Colors.primary} />
+              <Text style={styles.previewText} numberOfLines={2}>{address}</Text>
             </View>
-          ) : (
-            <Text style={styles.addressPlaceholder}>No location selected</Text>
           )}
-          <Button title="Confirm Location" onPress={handleConfirm} style={styles.confirmBtn} />
+
+          <Button title="Confirm Location" onPress={handleConfirm} style={{ marginTop: Spacing.lg }} />
         </View>
       </View>
     </Modal>
@@ -338,7 +328,7 @@ export default function AddAppointmentScreen({ navigation, route }) {
         <TouchableOpacity style={styles.pickerBtn} onPress={() => setMapVisible(true)}>
           <Ionicons name="location" size={20} color={Colors.primary} />
           <Text style={[styles.pickerText, !form.location && { color: Colors.placeholder }]} numberOfLines={1}>
-            {form.location || 'Tap to pick on map'}
+            {form.location || 'Tap to add location'}
           </Text>
           <Ionicons name="map-outline" size={18} color={Colors.textSecondary} />
         </TouchableOpacity>
@@ -443,26 +433,34 @@ const styles = StyleSheet.create({
   clearLocation: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: Spacing.sm },
   clearText: { fontSize: FontSize.xs, color: Colors.textSecondary },
 
-  // Map Modal
-  mapModal: { flex: 1, backgroundColor: Colors.white },
-  mapHeader: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: Spacing.md, paddingTop: Platform.OS === 'ios' ? 52 : 16, paddingBottom: 12,
-    backgroundColor: Colors.white,
+  // Location Modal
+  locModal: { flex: 1, backgroundColor: Colors.white },
+  locHeader: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: Spacing.lg, paddingTop: Platform.OS === 'ios' ? 52 : Spacing.lg, paddingBottom: Spacing.md,
     borderBottomWidth: 1, borderColor: Colors.border,
   },
-  mapClose: { padding: 4 },
-  mapTitle: { flex: 1, textAlign: 'center', fontSize: FontSize.lg, fontWeight: '700', color: Colors.text },
-  myLocBtn: { padding: 4 },
-  mapHint: { textAlign: 'center', fontSize: FontSize.xs, color: Colors.textSecondary, paddingVertical: 6 },
-  map: { flex: 1 },
-  mapFooter: {
-    backgroundColor: Colors.white, padding: Spacing.md,
-    borderTopWidth: 1, borderColor: Colors.border,
-    paddingBottom: Platform.OS === 'ios' ? 32 : Spacing.md,
+  locTitle: { fontSize: FontSize.lg, fontWeight: '700', color: Colors.text },
+  locBody: { padding: Spacing.lg, flex: 1 },
+  gpsBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
+    backgroundColor: Colors.primary, borderRadius: BorderRadius.md,
+    paddingVertical: 16, marginBottom: Spacing.lg,
   },
-  addressRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: Spacing.md },
-  addressText: { flex: 1, fontSize: FontSize.md, color: Colors.text, lineHeight: 20 },
-  addressPlaceholder: { color: Colors.placeholder, fontSize: FontSize.sm, marginBottom: Spacing.md, textAlign: 'center' },
-  confirmBtn: { marginTop: 0 },
+  gpsBtnText: { color: Colors.white, fontWeight: '700', fontSize: FontSize.md },
+  dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: Spacing.lg },
+  dividerLine: { flex: 1, height: 1, backgroundColor: Colors.border },
+  dividerText: { fontSize: FontSize.xs, color: Colors.textSecondary, fontWeight: '600' },
+  locLabel: { fontSize: FontSize.sm, fontWeight: '600', color: Colors.text, marginBottom: 8 },
+  locInput: {
+    borderWidth: 1.5, borderColor: Colors.border, borderRadius: BorderRadius.md,
+    padding: Spacing.md, fontSize: FontSize.md, color: Colors.text,
+    minHeight: 90, backgroundColor: Colors.white,
+  },
+  previewRow: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 8,
+    marginTop: Spacing.md, backgroundColor: Colors.primaryLight + '40',
+    borderRadius: BorderRadius.md, padding: Spacing.md,
+  },
+  previewText: { flex: 1, fontSize: FontSize.sm, color: Colors.text, lineHeight: 20 },
 });
