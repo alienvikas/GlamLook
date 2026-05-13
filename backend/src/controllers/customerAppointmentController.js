@@ -6,12 +6,20 @@ exports.book = async (req, res) => {
   const { service_id, scheduled_at, duration, location, notes } = req.body;
   if (!scheduled_at || !duration) return res.status(400).json({ error: 'scheduled_at and duration are required' });
 
-  // Get the artist (single-tenant: first/only artist)
-  const artistRow = await db.query(
-    'SELECT id, name, phone, expo_push_token FROM artists WHERE is_active=TRUE LIMIT 1'
-  );
-  if (!artistRow.rows.length) return res.status(404).json({ error: 'No artist found' });
-  const artist = artistRow.rows[0];
+  // Derive artist from the booked service; fall back to any artist
+  let artist;
+  if (service_id) {
+    const svcArtist = await db.query(
+      'SELECT a.id, a.name, a.phone, a.expo_push_token FROM artists a JOIN services s ON s.artist_id=a.id WHERE s.id=$1 LIMIT 1',
+      [service_id]
+    );
+    artist = svcArtist.rows[0];
+  }
+  if (!artist) {
+    const fallback = await db.query('SELECT id, name, phone, expo_push_token FROM artists LIMIT 1');
+    artist = fallback.rows[0];
+  }
+  if (!artist) return res.status(404).json({ error: 'No artist found' });
 
   // Get customer info
   const custRow = await db.query('SELECT id, name, email, phone FROM customers WHERE id=$1', [req.customerId]);
@@ -70,11 +78,8 @@ exports.getMyAppointments = async (req, res) => {
 
 exports.getServices = async (req, res) => {
   try {
-    const artistRow = await db.query('SELECT id FROM artists LIMIT 1');
-    if (!artistRow.rows.length) return res.json([]);
     const result = await db.query(
-      'SELECT id, name, price, duration AS duration_minutes, description FROM services WHERE artist_id=$1 AND is_active IS NOT FALSE ORDER BY name',
-      [artistRow.rows[0].id]
+      'SELECT id, name, price, duration AS duration_minutes, description FROM services WHERE is_active IS NOT FALSE ORDER BY name'
     );
     res.json(result.rows);
   } catch (err) {
