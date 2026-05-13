@@ -19,6 +19,8 @@ const app = express();
 // Add customer_photo_url column if not yet present
 const db = require('./config/database');
 db.query(`ALTER TABLE appointments ADD COLUMN IF NOT EXISTS customer_photo_url TEXT`).catch(() => {});
+// Ensure existing services are visible (fix NULL is_active)
+db.query(`UPDATE services SET is_active=TRUE WHERE is_active IS NULL`).catch(() => {});
 
 app.use(cors());
 app.use(express.json());

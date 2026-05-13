@@ -69,11 +69,15 @@ exports.getMyAppointments = async (req, res) => {
 };
 
 exports.getServices = async (req, res) => {
-  const artistRow = await db.query('SELECT id FROM artists WHERE is_active=TRUE LIMIT 1');
-  if (!artistRow.rows.length) return res.json([]);
-  const result = await db.query(
-    'SELECT id, name, price, duration AS duration_minutes, description FROM services WHERE artist_id=$1 AND is_active=TRUE ORDER BY name',
-    [artistRow.rows[0].id]
-  );
-  res.json(result.rows);
+  try {
+    const artistRow = await db.query('SELECT id FROM artists LIMIT 1');
+    if (!artistRow.rows.length) return res.json([]);
+    const result = await db.query(
+      'SELECT id, name, price, duration AS duration_minutes, description FROM services WHERE artist_id=$1 AND is_active IS NOT FALSE ORDER BY name',
+      [artistRow.rows[0].id]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };

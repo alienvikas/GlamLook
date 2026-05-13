@@ -12,7 +12,7 @@ exports.create = async (req, res) => {
   const { name, description, duration, price, category } = req.body;
   if (!name || !duration || !price) return res.status(400).json({ error: 'name, duration and price are required' });
   const result = await db.query(
-    'INSERT INTO services (artist_id, name, description, duration, price, category) VALUES ($1,$2,$3,$4,$5,$6) RETURNING *',
+    'INSERT INTO services (artist_id, name, description, duration, price, category, is_active) VALUES ($1,$2,$3,$4,$5,$6,TRUE) RETURNING *',
     [req.artistId, name, description || null, duration, price, category || null]
   );
   res.status(201).json(result.rows[0]);
