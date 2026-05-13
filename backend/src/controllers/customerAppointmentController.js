@@ -33,7 +33,7 @@ exports.book = async (req, res) => {
   // Get service info
   let serviceInfo = null;
   if (service_id) {
-    const svcRow = await db.query('SELECT name, price, duration_minutes FROM services WHERE id=$1', [service_id]);
+    const svcRow = await db.query('SELECT name, price, duration AS duration_minutes FROM services WHERE id=$1', [service_id]);
     serviceInfo = svcRow.rows[0] || null;
   }
 
@@ -70,7 +70,7 @@ exports.getServices = async (req, res) => {
   const artistRow = await db.query('SELECT id FROM artists WHERE is_active=TRUE LIMIT 1');
   if (!artistRow.rows.length) return res.json([]);
   const result = await db.query(
-    'SELECT id, name, price, duration_minutes, description FROM services WHERE artist_id=$1 AND is_active=TRUE ORDER BY name',
+    'SELECT id, name, price, duration AS duration_minutes, description FROM services WHERE artist_id=$1 AND is_active=TRUE ORDER BY name',
     [artistRow.rows[0].id]
   );
   res.json(result.rows);
