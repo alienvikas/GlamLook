@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "22497124847",
+    "project_id": "glambook-c62a4",
+    "storage_bucket": "glambook-c62a4.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:22497124847:android:8ab8941a052901ea9c161a",
+        "android_client_info": {
+          "package_name": "com.glambook.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA8oRNP0KbZRSqyI__gaUPvI2ldVlvY7lY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
