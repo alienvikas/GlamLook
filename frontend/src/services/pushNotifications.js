@@ -37,8 +37,10 @@ export async function registerForPushNotifications() {
     const { data: token } = await Notifications.getExpoPushTokenAsync({
       projectId: '4341a5ba-bb2d-4123-a60f-6fa8d7a0e67a',
     });
+    console.log('Push token obtained:', token);
     await authAPI.savePushToken(token);
+    console.log('Push token saved to backend');
   } catch (err) {
-    console.log('Push token registration failed:', err.message);
+    console.error('Push token registration failed:', err.message, err);
   }
 }
