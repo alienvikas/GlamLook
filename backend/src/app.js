@@ -11,6 +11,8 @@ const portfolioRoutes = require('./routes/portfolio');
 const paymentRoutes = require('./routes/payments');
 const dashboardRoutes = require('./routes/dashboard');
 const aiRoutes = require('./routes/ai');
+const customerAuthRoutes = require('./routes/customerAuth');
+const customerAppointmentRoutes = require('./routes/customerAppointments');
 
 const app = express();
 
@@ -27,6 +29,8 @@ app.use('/api/portfolio', portfolioRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/customer/auth', customerAuthRoutes);
+app.use('/api/customer', customerAppointmentRoutes);
 
 app.get('/api/health', (req, res) => res.json({ status: 'OK', timestamp: new Date() }));
 

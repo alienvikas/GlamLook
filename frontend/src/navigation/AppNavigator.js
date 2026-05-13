@@ -24,6 +24,8 @@ import ProfileScreen from '../screens/profile/ProfileScreen';
 import QRCodeScreen from '../screens/profile/QRCodeScreen';
 import PaymentsScreen from '../screens/payments/PaymentsScreen';
 import AIAssistantScreen from '../screens/ai/AIAssistantScreen';
+import CustomerHomeScreen from '../screens/customer/CustomerHomeScreen';
+import CustomerBookScreen from '../screens/customer/CustomerBookScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -65,7 +67,7 @@ function MainTabs() {
 }
 
 export default function AppNavigator() {
-  const { artist, loading } = useAuth();
+  const { artist, role, loading } = useAuth();
 
   if (loading) {
     return (
@@ -78,7 +80,7 @@ export default function AppNavigator() {
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {artist ? (
+        {role === 'admin' ? (
           <>
             <Stack.Screen name="Main" component={MainTabs} />
             <Stack.Screen name="ClientDetail" component={ClientDetailScreen} />
@@ -90,6 +92,11 @@ export default function AppNavigator() {
             <Stack.Screen name="Payments" component={PaymentsScreen} />
             <Stack.Screen name="QRCode" component={QRCodeScreen} />
             <Stack.Screen name="AIAssistant" component={AIAssistantScreen} />
+          </>
+        ) : role === 'customer' ? (
+          <>
+            <Stack.Screen name="CustomerHome" component={CustomerHomeScreen} />
+            <Stack.Screen name="CustomerBook" component={CustomerBookScreen} />
           </>
         ) : (
           <>

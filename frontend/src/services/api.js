@@ -78,4 +78,25 @@ export const aiAPI = {
   chat: (message, history) => api.post('/ai/chat', { message, history }),
 };
 
+// ── Customer API (separate token handled via customerApi instance) ──────────
+const customerApi = axios.create({ baseURL: BASE_URL, timeout: 15000 });
+customerApi.interceptors.request.use(async (config) => {
+  const token = await AsyncStorage.getItem('customerToken');
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+customerApi.interceptors.response.use((res) => res.data, (err) => Promise.reject(err.response?.data || err));
+
+export const customerAuthAPI = {
+  register: (data) => customerApi.post('/customer/auth/register', data),
+  login: (data) => customerApi.post('/customer/auth/login', data),
+  getMe: () => customerApi.get('/customer/auth/me'),
+};
+
+export const customerBookingAPI = {
+  getServices: () => customerApi.get('/customer/services'),
+  book: (data) => customerApi.post('/customer/book', data),
+  getMyAppointments: () => customerApi.get('/customer/my'),
+};
+
 export default api;

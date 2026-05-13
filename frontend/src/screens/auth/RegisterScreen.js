@@ -10,31 +10,23 @@ import Button from '../../components/Button';
 import Input from '../../components/Input';
 import { Colors, Spacing, FontSize } from '../../theme/colors';
 
-export default function RegisterScreen({ navigation }) {
-  const { register } = useAuth();
+export default function RegisterScreen({ navigation, route }) {
+  const { register, customerRegister } = useAuth();
+  const [role, setRole] = useState(route?.params?.role || 'admin');
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirm: '' });
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState({});
-
   const set = (key) => (val) => setForm((p) => ({ ...p, [key]: val }));
 
-  const validate = () => {
-    const e = {};
-    if (!form.name.trim()) e.name = 'Full name is required';
-    if (!form.email.trim()) e.email = 'Email is required';
-    else if (!/\S+@\S+\.\S+/.test(form.email)) e.email = 'Invalid email';
-    if (!form.password) e.password = 'Password is required';
-    else if (form.password.length < 6) e.password = 'Minimum 6 characters';
-    if (form.password !== form.confirm) e.confirm = 'Passwords do not match';
-    setErrors(e);
-    return !Object.keys(e).length;
-  };
-
   const handleRegister = async () => {
-    if (!validate()) return;
+    if (!form.name.trim()) return Alert.alert('Error', 'Name is required');
+    if (!form.email.trim() || !/\S+@\S+\.\S+/.test(form.email)) return Alert.alert('Error', 'Valid email required');
+    if (form.password.length < 6) return Alert.alert('Error', 'Password must be at least 6 characters');
+    if (form.password !== form.confirm) return Alert.alert('Error', 'Passwords do not match');
     setLoading(true);
     try {
-      await register({ name: form.name.trim(), email: form.email.trim().toLowerCase(), phone: form.phone, password: form.password });
+      const data = { name: form.name.trim(), email: form.email.trim().toLowerCase(), phone: form.phone, password: form.password };
+      if (role === 'admin') await register(data);
+      else await customerRegister(data);
     } catch (err) {
       Alert.alert('Registration Failed', err.error || 'Please try again');
     } finally {
@@ -56,15 +48,28 @@ export default function RegisterScreen({ navigation }) {
         </View>
       </LinearGradient>
 
+      {/* Role tabs */}
+      <View style={styles.roleTabs}>
+        {[
+          { key: 'admin', label: 'Artist / Admin', icon: 'brush' },
+          { key: 'customer', label: 'Customer', icon: 'person' },
+        ].map((r) => (
+          <TouchableOpacity key={r.key} style={[styles.roleTab, role === r.key && styles.roleTabActive]} onPress={() => setRole(r.key)}>
+            <Ionicons name={r.icon} size={16} color={role === r.key ? Colors.primary : Colors.textSecondary} />
+            <Text style={[styles.roleTabText, role === r.key && styles.roleTabTextActive]}>{r.label}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
       <ScrollView style={styles.form} contentContainerStyle={styles.formContent} keyboardShouldPersistTaps="handled">
         <Text style={styles.title}>Create Account</Text>
-        <Text style={styles.subtitle}>Join thousands of makeup artists</Text>
+        <Text style={styles.subtitle}>Signing up as {role === 'admin' ? 'Artist / Admin' : 'Customer'}</Text>
 
-        <Input label="Full Name" value={form.name} onChangeText={set('name')} placeholder="Jane Doe" leftIcon="person-outline" error={errors.name} />
-        <Input label="Email" value={form.email} onChangeText={set('email')} placeholder="your@email.com" keyboardType="email-address" autoCapitalize="none" leftIcon="mail-outline" error={errors.email} />
+        <Input label="Full Name" value={form.name} onChangeText={set('name')} placeholder="Jane Doe" leftIcon="person-outline" />
+        <Input label="Email" value={form.email} onChangeText={set('email')} placeholder="your@email.com" keyboardType="email-address" autoCapitalize="none" leftIcon="mail-outline" />
         <Input label="Phone (optional)" value={form.phone} onChangeText={set('phone')} placeholder="+91 9999999999" keyboardType="phone-pad" leftIcon="call-outline" />
-        <Input label="Password" value={form.password} onChangeText={set('password')} placeholder="Min 6 characters" secureTextEntry leftIcon="lock-closed-outline" error={errors.password} />
-        <Input label="Confirm Password" value={form.confirm} onChangeText={set('confirm')} placeholder="Repeat password" secureTextEntry leftIcon="lock-closed-outline" error={errors.confirm} />
+        <Input label="Password" value={form.password} onChangeText={set('password')} placeholder="Min 6 characters" secureTextEntry leftIcon="lock-closed-outline" />
+        <Input label="Confirm Password" value={form.confirm} onChangeText={set('confirm')} placeholder="Repeat password" secureTextEntry leftIcon="lock-closed-outline" />
 
         <Button title="Create Account" onPress={handleRegister} loading={loading} style={{ marginTop: Spacing.sm }} />
 
@@ -80,20 +85,21 @@ export default function RegisterScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  gradient: { paddingTop: 52, paddingBottom: 36, paddingHorizontal: Spacing.lg },
+  gradient: { paddingTop: 52, paddingBottom: 32, paddingHorizontal: Spacing.lg },
   back: { marginBottom: 12 },
   logoArea: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  logoCircle: {
-    width: 56, height: 56, borderRadius: 28,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center', justifyContent: 'center',
-  },
+  logoCircle: { width: 52, height: 52, borderRadius: 26, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
   appName: { fontSize: 28, fontWeight: '800', color: Colors.white },
-  form: { flex: 1, backgroundColor: Colors.background, borderTopLeftRadius: 28, borderTopRightRadius: 28, marginTop: -20 },
-  formContent: { padding: Spacing.lg, paddingTop: Spacing.xl },
+  roleTabs: { flexDirection: 'row', backgroundColor: Colors.white, borderBottomWidth: 1, borderColor: Colors.border },
+  roleTab: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 13 },
+  roleTabActive: { borderBottomWidth: 3, borderBottomColor: Colors.primary },
+  roleTabText: { fontSize: FontSize.sm, fontWeight: '600', color: Colors.textSecondary },
+  roleTabTextActive: { color: Colors.primary },
+  form: { flex: 1, backgroundColor: Colors.background },
+  formContent: { padding: Spacing.lg, paddingTop: Spacing.md, paddingBottom: 40 },
   title: { fontSize: FontSize.xxl, fontWeight: '800', color: Colors.text, marginBottom: 4 },
-  subtitle: { fontSize: FontSize.md, color: Colors.textSecondary, marginBottom: Spacing.xl },
-  footer: { flexDirection: 'row', justifyContent: 'center', marginTop: Spacing.xl, paddingBottom: Spacing.xl },
+  subtitle: { fontSize: FontSize.md, color: Colors.textSecondary, marginBottom: Spacing.lg },
+  footer: { flexDirection: 'row', justifyContent: 'center', marginTop: Spacing.xl },
   footerText: { color: Colors.textSecondary, fontSize: FontSize.md },
   link: { color: Colors.primary, fontWeight: '700', fontSize: FontSize.md },
 });
