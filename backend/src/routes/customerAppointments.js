@@ -1,9 +1,10 @@
 const router = require('express').Router();
 const customerAuth = require('../middleware/customerAuth');
+const upload = require('../middleware/upload');
 const ctrl = require('../controllers/customerAppointmentController');
 
-router.get('/services', ctrl.getServices);          // public — list services
-router.post('/book', customerAuth, ctrl.book);
+router.get('/services', ctrl.getServices);
+router.post('/book', customerAuth, upload.single('customer_photo'), ctrl.book);
 router.get('/my', customerAuth, ctrl.getMyAppointments);
 
 module.exports = router;

@@ -16,6 +16,10 @@ const customerAppointmentRoutes = require('./routes/customerAppointments');
 
 const app = express();
 
+// Add customer_photo_url column if not yet present
+const db = require('./config/database');
+db.query(`ALTER TABLE appointments ADD COLUMN IF NOT EXISTS customer_photo_url TEXT`).catch(() => {});
+
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

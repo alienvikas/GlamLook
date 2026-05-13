@@ -37,10 +37,12 @@ exports.book = async (req, res) => {
     serviceInfo = svcRow.rows[0] || null;
   }
 
+  const customerPhotoUrl = req.file ? req.file.path : null;
+
   const result = await db.query(
-    `INSERT INTO appointments (artist_id, client_id, customer_id, service_id, scheduled_at, duration, location, notes, total_amount, booked_by)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'customer') RETURNING *`,
-    [artist.id, clientId, customer.id, service_id || null, scheduled_at, duration, location || null, notes || null, serviceInfo?.price || null]
+    `INSERT INTO appointments (artist_id, client_id, customer_id, service_id, scheduled_at, duration, location, notes, total_amount, booked_by, customer_photo_url)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'customer',$10) RETURNING *`,
+    [artist.id, clientId, customer.id, service_id || null, scheduled_at, duration, location || null, notes || null, serviceInfo?.price || null, customerPhotoUrl]
   );
   const appointment = result.rows[0];
   res.status(201).json(appointment);
@@ -56,7 +58,7 @@ exports.book = async (req, res) => {
 
 exports.getMyAppointments = async (req, res) => {
   const result = await db.query(
-    `SELECT a.*, s.name AS service_name, s.price AS service_price
+    `SELECT a.*, s.name AS service_name, s.price AS service_price, a.customer_photo_url
      FROM appointments a
      LEFT JOIN services s ON s.id = a.service_id
      WHERE a.customer_id=$1

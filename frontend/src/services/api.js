@@ -95,7 +95,10 @@ export const customerAuthAPI = {
 
 export const customerBookingAPI = {
   getServices: () => customerApi.get('/customer/services'),
-  book: (data) => customerApi.post('/customer/book', data),
+  book: (data) => {
+    const isFormData = data instanceof FormData;
+    return customerApi.post('/customer/book', data, isFormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : {});
+  },
   getMyAppointments: () => customerApi.get('/customer/my'),
 };
 
