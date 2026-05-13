@@ -1,4 +1,5 @@
 const db = require('../config/database');
+const { sendPushNotification } = require('../services/notifications');
 
 exports.getAll = async (req, res) => {
   const { status, from, to, client_id } = req.query;
@@ -46,7 +47,31 @@ exports.create = async (req, res) => {
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
     [req.artistId, client_id, service_id || null, scheduled_at, duration, location || null, notes || null, total_amount || null]
   );
-  res.status(201).json(result.rows[0]);
+  const appointment = result.rows[0];
+  res.status(201).json(appointment);
+
+  // Send push notification (non-blocking)
+  try {
+    const [artistRow, clientRow, serviceRow] = await Promise.all([
+      db.query('SELECT expo_push_token FROM artists WHERE id=$1', [req.artistId]),
+      db.query('SELECT name FROM clients WHERE id=$1', [client_id]),
+      service_id ? db.query('SELECT name FROM services WHERE id=$1', [service_id]) : Promise.resolve({ rows: [] }),
+    ]);
+    const token = artistRow.rows[0]?.expo_push_token;
+    const clientName = clientRow.rows[0]?.name || 'Client';
+    const serviceName = serviceRow.rows[0]?.name || 'Appointment';
+    const date = new Date(scheduled_at).toLocaleString('en-IN', {
+      day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+    });
+    await sendPushNotification(
+      token,
+      '📅 New Appointment Booked',
+      `${clientName} — ${serviceName} on ${date}`,
+      { appointmentId: appointment.id }
+    );
+  } catch (err) {
+    console.error('Notification send error:', err.message);
+  }
 };
 
 exports.update = async (req, res) => {

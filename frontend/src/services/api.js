@@ -25,6 +25,7 @@ export const authAPI = {
     return api.put('/auth/profile', data, isFormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : {});
   },
   changePassword: (data) => api.put('/auth/change-password', data),
+  savePushToken: (token) => api.put('/auth/push-token', { token }),
 };
 
 export const clientAPI = {

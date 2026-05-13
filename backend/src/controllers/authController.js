@@ -74,6 +74,13 @@ exports.updateProfile = async (req, res) => {
   res.json(result.rows[0]);
 };
 
+exports.savePushToken = async (req, res) => {
+  const { token } = req.body;
+  if (!token) return res.status(400).json({ error: 'Token required' });
+  await db.query('UPDATE artists SET expo_push_token=$1 WHERE id=$2', [token, req.artistId]);
+  res.json({ message: 'Push token saved' });
+};
+
 exports.changePassword = async (req, res) => {
   const { currentPassword, newPassword } = req.body;
   if (!currentPassword || !newPassword) return res.status(400).json({ error: 'Both passwords required' });
