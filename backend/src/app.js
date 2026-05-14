@@ -40,6 +40,18 @@ app.use('/api/customer', customerAppointmentRoutes);
 
 app.get('/api/health', (req, res) => res.json({ status: 'OK', timestamp: new Date() }));
 
+// Test email endpoint (remove after testing)
+app.get('/api/test-email', async (req, res) => {
+  const { sendEmail } = require('./services/email');
+  const to = req.query.to || process.env.EMAIL_USER;
+  try {
+    await sendEmail(to, 'GlamBook Email Test', '<h2>✅ Email is working!</h2><p>Your GlamBook email notifications are configured correctly.</p>');
+    res.json({ success: true, message: `Test email sent to ${to}` });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(err.status || 500).json({ error: err.message || 'Internal Server Error' });

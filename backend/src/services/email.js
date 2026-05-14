@@ -1,10 +1,21 @@
 const nodemailer = require('nodemailer');
 
 function getTransporter() {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) return null;
+  const user = process.env.EMAIL_USER;
+  const pass = process.env.EMAIL_PASS;
+  if (!user || !pass) {
+    console.error('Email not configured: EMAIL_USER or EMAIL_PASS missing');
+    return null;
+  }
   return nodemailer.createTransport({
-    service: 'gmail',
-    auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    auth: {
+      user,
+      pass: pass.replace(/\s/g, ''), // strip spaces from app password
+    },
+    tls: { rejectUnauthorized: false },
   });
 }
 
@@ -13,15 +24,15 @@ async function sendEmail(to, subject, html) {
   const transporter = getTransporter();
   if (!transporter) return;
   try {
-    await transporter.sendMail({
+    const info = await transporter.sendMail({
       from: `"GlamBook Beauty" <${process.env.EMAIL_USER}>`,
       to,
       subject,
       html,
     });
-    console.log('Email sent to', to);
+    console.log('Email sent to', to, '| messageId:', info.messageId);
   } catch (err) {
-    console.error('Email error:', err.message);
+    console.error('Email error:', err.code, '-', err.message);
   }
 }
 
