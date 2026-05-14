@@ -1,5 +1,7 @@
 const db = require('../config/database');
 const { sendPushNotification } = require('../services/notifications');
+const { sendWhatsApp } = require('../services/whatsapp');
+const { sendEmail, appointmentBookedEmail, appointmentStatusEmail } = require('../services/email');
 
 exports.getAll = async (req, res) => {
   const { status, from, to, client_id } = req.query;
@@ -50,25 +52,37 @@ exports.create = async (req, res) => {
   const appointment = result.rows[0];
   res.status(201).json(appointment);
 
-  // Send push notification (non-blocking)
+  // Notifications (non-blocking)
   try {
     const [artistRow, clientRow, serviceRow] = await Promise.all([
-      db.query('SELECT expo_push_token FROM artists WHERE id=$1', [req.artistId]),
-      db.query('SELECT name FROM clients WHERE id=$1', [client_id]),
-      service_id ? db.query('SELECT name FROM services WHERE id=$1', [service_id]) : Promise.resolve({ rows: [] }),
+      db.query('SELECT name, expo_push_token FROM artists WHERE id=$1', [req.artistId]),
+      db.query('SELECT name, email, phone FROM clients WHERE id=$1', [client_id]),
+      service_id ? db.query('SELECT name, price FROM services WHERE id=$1', [service_id]) : Promise.resolve({ rows: [] }),
     ]);
+    const artistName = artistRow.rows[0]?.name || 'Your Artist';
     const token = artistRow.rows[0]?.expo_push_token;
-    const clientName = clientRow.rows[0]?.name || 'Client';
-    const serviceName = serviceRow.rows[0]?.name || 'Appointment';
-    const date = new Date(scheduled_at).toLocaleString('en-IN', {
-      day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+    const client = clientRow.rows[0] || {};
+    const clientName = client.name || 'Client';
+    const service = serviceRow.rows[0] || {};
+    const serviceName = service.name || 'Appointment';
+    const dateStr = new Date(scheduled_at).toLocaleString('en-IN', {
+      day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
     });
-    await sendPushNotification(
-      token,
-      '📅 New Appointment Booked',
-      `${clientName} — ${serviceName} on ${date}`,
-      { appointmentId: appointment.id }
-    );
+
+    // Push to artist
+    sendPushNotification(token, '📅 New Appointment Booked', `${clientName} — ${serviceName} on ${dateStr}`, { appointmentId: appointment.id }).catch(() => {});
+
+    // WhatsApp to client
+    if (client.phone) {
+      const waMsg = `📅 *Appointment Booked - GlamBook*\n\nHi ${clientName}!\nYour appointment has been booked.\n\n💄 *Service:* ${serviceName}\n👩‍🎨 *Artist:* ${artistName}\n📅 *Date & Time:* ${dateStr}${location ? '\n📍 *Location:* ' + location : ''}${service.price ? '\n💰 *Price:* ₹' + service.price : ''}\n\nSee you soon! ✨`;
+      sendWhatsApp(client.phone, waMsg).catch(() => {});
+    }
+
+    // Email to client
+    if (client.email) {
+      const html = appointmentBookedEmail({ customerName: clientName, artistName, serviceName, date: dateStr, location, price: service.price });
+      sendEmail(client.email, `📅 Appointment Confirmed — ${serviceName} with ${artistName}`, html).catch(() => {});
+    }
   } catch (err) {
     console.error('Notification send error:', err.message);
   }
@@ -92,7 +106,38 @@ exports.update = async (req, res) => {
     values
   );
   if (!result.rows.length) return res.status(404).json({ error: 'Appointment not found' });
-  res.json(result.rows[0]);
+  const updated = result.rows[0];
+  res.json(updated);
+
+  // Notify client on status change (non-blocking)
+  if (status && ['confirmed', 'cancelled', 'completed'].includes(status)) {
+    try {
+      const [clientRow, serviceRow, artistRow] = await Promise.all([
+        db.query('SELECT name, email, phone FROM clients WHERE id=$1', [updated.client_id]),
+        updated.service_id ? db.query('SELECT name FROM services WHERE id=$1', [updated.service_id]) : Promise.resolve({ rows: [] }),
+        db.query('SELECT name FROM artists WHERE id=$1', [req.artistId]),
+      ]);
+      const client = clientRow.rows[0] || {};
+      const clientName = client.name || 'Client';
+      const serviceName = serviceRow.rows[0]?.name || 'Appointment';
+      const artistName = artistRow.rows[0]?.name || 'Your Artist';
+      const dateStr = new Date(updated.scheduled_at).toLocaleString('en-IN', {
+        day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+      });
+      const statusLabel = { confirmed: 'Confirmed ✅', cancelled: 'Cancelled ❌', completed: 'Completed ⭐' }[status];
+
+      if (client.phone) {
+        const waMsg = `📅 *Appointment ${statusLabel} - GlamBook*\n\nHi ${clientName}!\n\n💄 *Service:* ${serviceName}\n👩‍🎨 *Artist:* ${artistName}\n📅 *Date & Time:* ${dateStr}\n\n${status === 'confirmed' ? 'Your appointment is confirmed. See you soon! ✨' : status === 'cancelled' ? 'Your appointment has been cancelled. Please contact us to rebook.' : 'Thank you for visiting! We hope you loved your look. 💄'}`;
+        sendWhatsApp(client.phone, waMsg).catch(() => {});
+      }
+      if (client.email) {
+        const html = appointmentStatusEmail({ customerName: clientName, artistName, serviceName, date: dateStr, status });
+        sendEmail(client.email, `Appointment ${statusLabel} — ${serviceName}`, html).catch(() => {});
+      }
+    } catch (err) {
+      console.error('Status notification error:', err.message);
+    }
+  }
 };
 
 exports.remove = async (req, res) => {
