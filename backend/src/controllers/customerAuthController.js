@@ -20,6 +20,22 @@ exports.register = async (req, res) => {
   );
   const customer = result.rows[0];
   res.status(201).json({ token: signToken(customer.id), customer });
+
+  // Auto-add customer as a client for every artist (non-blocking)
+  db.query('SELECT id FROM artists').then(async (artistRes) => {
+    for (const artist of artistRes.rows) {
+      const exists = await db.query(
+        'SELECT id FROM clients WHERE artist_id=$1 AND email=$2',
+        [artist.id, customer.email]
+      );
+      if (!exists.rows.length) {
+        await db.query(
+          'INSERT INTO clients (artist_id, name, email, phone) VALUES ($1,$2,$3,$4)',
+          [artist.id, customer.name, customer.email, customer.phone || null]
+        );
+      }
+    }
+  }).catch((err) => console.error('Auto client create error:', err.message));
 };
 
 exports.login = async (req, res) => {
