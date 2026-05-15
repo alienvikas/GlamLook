@@ -100,6 +100,12 @@ export const customerBookingAPI = {
     return customerApi.post('/customer/book', data, isFormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : {});
   },
   getMyAppointments: () => customerApi.get('/customer/my'),
+  submitFeedback: (data) => customerApi.post('/customer/feedback', data),
+  getMyFeedback: () => customerApi.get('/customer/my-feedback'),
+};
+
+export const feedbackAPI = {
+  getAll: () => api.get('/appointments/feedback'),
 };
 
 export default api;

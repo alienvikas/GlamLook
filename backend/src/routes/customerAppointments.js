@@ -6,5 +6,7 @@ const ctrl = require('../controllers/customerAppointmentController');
 router.get('/services', ctrl.getServices);
 router.post('/book', customerAuth, upload.single('customer_photo'), ctrl.book);
 router.get('/my', customerAuth, ctrl.getMyAppointments);
+router.post('/feedback', customerAuth, ctrl.submitFeedback);
+router.get('/my-feedback', customerAuth, ctrl.getMyFeedback);
 
 module.exports = router;

@@ -97,16 +97,37 @@ export default function CustomerBookScreen({ navigation }) {
     customerBookingAPI.getServices().then(setServices).catch(() => {});
   }, []);
 
-  const pickPhoto = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') { Alert.alert('Permission needed', 'Please allow photo access'); return; }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [3, 4],
-      quality: 0.8,
-    });
-    if (!result.canceled) setCustomerPhoto(result.assets[0]);
+  const pickPhoto = () => {
+    Alert.alert('Add Photo', 'Choose how to add your photo', [
+      {
+        text: 'Take Photo',
+        onPress: async () => {
+          const { status } = await ImagePicker.requestCameraPermissionsAsync();
+          if (status !== 'granted') { Alert.alert('Permission needed', 'Please allow camera access'); return; }
+          const result = await ImagePicker.launchCameraAsync({
+            allowsEditing: true,
+            aspect: [3, 4],
+            quality: 0.8,
+          });
+          if (!result.canceled) setCustomerPhoto(result.assets[0]);
+        },
+      },
+      {
+        text: 'Choose from Gallery',
+        onPress: async () => {
+          const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+          if (status !== 'granted') { Alert.alert('Permission needed', 'Please allow photo access'); return; }
+          const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images'],
+            allowsEditing: true,
+            aspect: [3, 4],
+            quality: 0.8,
+          });
+          if (!result.canceled) setCustomerPhoto(result.assets[0]);
+        },
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
   };
 
   const handleBook = async () => {

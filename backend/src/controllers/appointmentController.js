@@ -162,3 +162,19 @@ exports.getToday = async (req, res) => {
   );
   res.json(result.rows);
 };
+
+exports.getFeedback = async (req, res) => {
+  const result = await db.query(
+    `SELECT f.*, cu.name AS customer_name, s.name AS service_name, a.scheduled_at
+     FROM feedback f
+     JOIN customers cu ON cu.id = f.customer_id
+     LEFT JOIN appointments a ON a.id = f.appointment_id
+     LEFT JOIN services s ON s.id = a.service_id
+     WHERE f.artist_id=$1
+     ORDER BY f.created_at DESC`,
+    [req.artistId]
+  );
+  const rows = result.rows;
+  const avg = rows.length ? (rows.reduce((s, r) => s + r.rating, 0) / rows.length).toFixed(1) : null;
+  res.json({ reviews: rows, averageRating: avg, totalReviews: rows.length });
+};

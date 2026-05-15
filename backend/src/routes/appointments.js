@@ -3,6 +3,7 @@ const auth = require('../middleware/auth');
 const ctrl = require('../controllers/appointmentController');
 
 router.use(auth);
+router.get('/feedback', ctrl.getFeedback);
 router.get('/', ctrl.getAll);
 router.get('/today', ctrl.getToday);
 router.post('/', ctrl.create);

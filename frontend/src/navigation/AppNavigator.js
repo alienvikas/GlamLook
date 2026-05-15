@@ -24,8 +24,10 @@ import ProfileScreen from '../screens/profile/ProfileScreen';
 import QRCodeScreen from '../screens/profile/QRCodeScreen';
 import PaymentsScreen from '../screens/payments/PaymentsScreen';
 import AIAssistantScreen from '../screens/ai/AIAssistantScreen';
+import ReviewsScreen from '../screens/reviews/ReviewsScreen';
 import CustomerHomeScreen from '../screens/customer/CustomerHomeScreen';
 import CustomerBookScreen from '../screens/customer/CustomerBookScreen';
+import CustomerFeedbackScreen from '../screens/customer/CustomerFeedbackScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -51,6 +53,7 @@ function MainTabs() {
             Clients: focused ? 'people' : 'people-outline',
             Appointments: focused ? 'calendar' : 'calendar-outline',
             Portfolio: focused ? 'images' : 'images-outline',
+            Reviews: focused ? 'star' : 'star-outline',
             Profile: focused ? 'person' : 'person-outline',
           };
           return <Ionicons name={icons[route.name]} size={size} color={color} />;
@@ -60,7 +63,7 @@ function MainTabs() {
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
       <Tab.Screen name="Clients" component={ClientsScreen} />
       <Tab.Screen name="Appointments" component={AppointmentsScreen} />
-      <Tab.Screen name="Portfolio" component={PortfolioScreen} />
+      <Tab.Screen name="Reviews" component={ReviewsScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );
@@ -97,6 +100,7 @@ export default function AppNavigator() {
           <>
             <Stack.Screen name="CustomerHome" component={CustomerHomeScreen} />
             <Stack.Screen name="CustomerBook" component={CustomerBookScreen} />
+            <Stack.Screen name="CustomerFeedback" component={CustomerFeedbackScreen} />
           </>
         ) : (
           <>

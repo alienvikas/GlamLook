@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   KeyboardAvoidingView, Platform, Alert,
@@ -39,7 +39,7 @@ export default function CustomerAuthScreen() {
   };
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
       <LinearGradient colors={['#9C27B0', '#C2185B']} style={styles.gradient}>
         <View style={styles.logoArea}>
           <View style={styles.logoCircle}>

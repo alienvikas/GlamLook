@@ -19,10 +19,18 @@ export default function CustomerHomeScreen({ navigation }) {
   const { customer, logout } = useAuth();
   const insets = useSafeAreaInsets();
   const [appointments, setAppointments] = useState([]);
+  const [reviewedIds, setReviewedIds] = useState(new Set());
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
-    try { setAppointments(await customerBookingAPI.getMyAppointments()); } catch {}
+    try {
+      const [appts, reviewed] = await Promise.all([
+        customerBookingAPI.getMyAppointments(),
+        customerBookingAPI.getMyFeedback(),
+      ]);
+      setAppointments(appts);
+      setReviewedIds(new Set(reviewed));
+    } catch {}
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -36,22 +44,44 @@ export default function CustomerHomeScreen({ navigation }) {
   const upcoming = appointments.filter((a) => a.status !== 'cancelled' && new Date(a.scheduled_at) >= new Date());
   const past = appointments.filter((a) => a.status === 'completed' || new Date(a.scheduled_at) < new Date());
 
-  const renderAppt = ({ item }) => (
-    <Card style={styles.apptCard}>
-      <View style={styles.apptRow}>
-        <View style={styles.apptDateBox}>
-          <Text style={styles.apptDay}>{new Date(item.scheduled_at).toLocaleDateString('en-IN', { day: 'numeric' })}</Text>
-          <Text style={styles.apptMonth}>{new Date(item.scheduled_at).toLocaleDateString('en-IN', { month: 'short' })}</Text>
+  const renderAppt = ({ item }) => {
+    const isCompleted = item.status === 'completed';
+    const alreadyReviewed = reviewedIds.has(item.id);
+    return (
+      <Card style={styles.apptCard}>
+        <View style={styles.apptRow}>
+          <View style={styles.apptDateBox}>
+            <Text style={styles.apptDay}>{new Date(item.scheduled_at).toLocaleDateString('en-IN', { day: 'numeric' })}</Text>
+            <Text style={styles.apptMonth}>{new Date(item.scheduled_at).toLocaleDateString('en-IN', { month: 'short' })}</Text>
+          </View>
+          <View style={styles.apptInfo}>
+            <Text style={styles.apptService}>{item.service_name || 'Appointment'}</Text>
+            <Text style={styles.apptTime}>{new Date(item.scheduled_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</Text>
+            {item.location ? <Text style={styles.apptLoc} numberOfLines={1}><Ionicons name="location-outline" size={12} /> {item.location}</Text> : null}
+          </View>
+          <View style={styles.rightCol}>
+            <StatusBadge status={item.status} />
+            {isCompleted && !alreadyReviewed && (
+              <TouchableOpacity
+                style={styles.rateBtn}
+                onPress={() => navigation.navigate('CustomerFeedback', { appointment: item })}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="star" size={12} color="#F59E0B" />
+                <Text style={styles.rateBtnText}>Rate</Text>
+              </TouchableOpacity>
+            )}
+            {isCompleted && alreadyReviewed && (
+              <View style={styles.ratedBadge}>
+                <Ionicons name="checkmark-circle" size={12} color={Colors.success} />
+                <Text style={styles.ratedText}>Rated</Text>
+              </View>
+            )}
+          </View>
         </View>
-        <View style={styles.apptInfo}>
-          <Text style={styles.apptService}>{item.service_name || 'Appointment'}</Text>
-          <Text style={styles.apptTime}>{new Date(item.scheduled_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</Text>
-          {item.location ? <Text style={styles.apptLoc} numberOfLines={1}><Ionicons name="location-outline" size={12} /> {item.location}</Text> : null}
-        </View>
-        <StatusBadge status={item.status} />
-      </View>
-    </Card>
-  );
+      </Card>
+    );
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: Colors.background }}>
@@ -138,6 +168,16 @@ const styles = StyleSheet.create({
   apptService: { fontSize: FontSize.md, fontWeight: '700', color: Colors.text },
   apptTime: { fontSize: FontSize.sm, color: Colors.textSecondary, marginTop: 2 },
   apptLoc: { fontSize: FontSize.xs, color: Colors.textLight, marginTop: 2 },
+  rightCol: { alignItems: 'flex-end', gap: 6 },
+  rateBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: '#FEF3C7', borderRadius: 12,
+    paddingHorizontal: 8, paddingVertical: 4,
+    borderWidth: 1, borderColor: '#F59E0B',
+  },
+  rateBtnText: { fontSize: FontSize.xs, color: '#D97706', fontWeight: '700' },
+  ratedBadge: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  ratedText: { fontSize: FontSize.xs, color: Colors.success, fontWeight: '600' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 8 },
   emptyTitle: { fontSize: FontSize.lg, fontWeight: '700', color: Colors.text },
   emptyText: { fontSize: FontSize.md, color: Colors.textSecondary },

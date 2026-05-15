@@ -76,6 +76,42 @@ exports.getMyAppointments = async (req, res) => {
   res.json(result.rows);
 };
 
+exports.submitFeedback = async (req, res) => {
+  const { appointment_id, rating, comment } = req.body;
+  if (!appointment_id || !rating) return res.status(400).json({ error: 'appointment_id and rating are required' });
+  if (rating < 1 || rating > 5) return res.status(400).json({ error: 'Rating must be 1-5' });
+
+  // Verify this appointment belongs to the customer and is completed
+  const appt = await db.query(
+    'SELECT id, artist_id, status FROM appointments WHERE id=$1 AND customer_id=$2',
+    [appointment_id, req.customerId]
+  );
+  if (!appt.rows.length) return res.status(404).json({ error: 'Appointment not found' });
+  if (appt.rows[0].status !== 'completed') return res.status(400).json({ error: 'Can only review completed appointments' });
+
+  const artist_id = appt.rows[0].artist_id;
+  try {
+    const result = await db.query(
+      `INSERT INTO feedback (customer_id, artist_id, appointment_id, rating, comment)
+       VALUES ($1,$2,$3,$4,$5)
+       ON CONFLICT (customer_id, appointment_id) DO UPDATE SET rating=EXCLUDED.rating, comment=EXCLUDED.comment
+       RETURNING *`,
+      [req.customerId, artist_id, appointment_id, rating, comment || null]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getMyFeedback = async (req, res) => {
+  const result = await db.query(
+    'SELECT appointment_id FROM feedback WHERE customer_id=$1',
+    [req.customerId]
+  );
+  res.json(result.rows.map((r) => r.appointment_id));
+};
+
 exports.getServices = async (req, res) => {
   try {
     const result = await db.query(

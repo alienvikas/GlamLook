@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+﻿import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   Alert, Modal, ScrollView, KeyboardAvoidingView, Platform, RefreshControl,
@@ -52,7 +52,7 @@ function ServiceModal({ visible, onClose, onSave, editService }) {
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
         <View style={styles.modalHeader}>
           <TouchableOpacity onPress={onClose}>
             <Ionicons name="close" size={24} color={Colors.text} />

@@ -21,6 +21,17 @@ const db = require('./config/database');
 db.query(`ALTER TABLE appointments ADD COLUMN IF NOT EXISTS customer_photo_url TEXT`).catch(() => {});
 // Ensure existing services are visible (fix NULL is_active)
 db.query(`UPDATE services SET is_active=TRUE WHERE is_active IS NULL`).catch(() => {});
+// Create feedback table
+db.query(`CREATE TABLE IF NOT EXISTS feedback (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  customer_id UUID REFERENCES customers(id) ON DELETE CASCADE,
+  artist_id UUID REFERENCES artists(id) ON DELETE CASCADE,
+  appointment_id UUID REFERENCES appointments(id) ON DELETE CASCADE,
+  rating INTEGER CHECK (rating BETWEEN 1 AND 5) NOT NULL,
+  comment TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(customer_id, appointment_id)
+)`).catch(() => {});
 
 app.use(cors());
 app.use(express.json());

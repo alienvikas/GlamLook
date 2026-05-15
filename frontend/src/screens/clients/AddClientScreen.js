@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { clientAPI } from '../../services/api';
 import Header from '../../components/Header';
@@ -50,7 +50,7 @@ export default function AddClientScreen({ navigation, route }) {
   };
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
       <Header title={editClient ? 'Edit Client' : 'Add Client'} onBack={() => navigation.goBack()} />
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Input label="Full Name *" value={form.name} onChangeText={set('name')} placeholder="Jane Smith" leftIcon="person-outline" error={errors.name} />
