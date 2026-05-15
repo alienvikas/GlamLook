@@ -1,28 +1,27 @@
-const { Resend } = require('resend');
+const sgMail = require('@sendgrid/mail');
 
-function getClient() {
-  if (!process.env.RESEND_API_KEY) {
-    console.error('Email not configured: RESEND_API_KEY missing');
-    return null;
+function setup() {
+  if (!process.env.SENDGRID_API_KEY) {
+    console.error('Email not configured: SENDGRID_API_KEY missing');
+    return false;
   }
-  return new Resend(process.env.RESEND_API_KEY);
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+  return true;
 }
 
 async function sendEmail(to, subject, html) {
   if (!to) return;
-  const client = getClient();
-  if (!client) return;
+  if (!setup()) return;
   try {
-    const { data, error } = await client.emails.send({
-      from: 'GlamBook Beauty <onboarding@resend.dev>',
+    await sgMail.send({
+      from: { name: 'GlamBook Beauty', email: 'omvikas19041990@gmail.com' },
       to,
       subject,
       html,
     });
-    if (error) throw new Error(error.message);
-    console.log('Email sent to', to, '| id:', data.id);
+    console.log('Email sent to', to);
   } catch (err) {
-    console.error('Email error:', err.message);
+    console.error('Email error:', err.response?.body?.errors?.[0]?.message || err.message);
   }
 }
 
