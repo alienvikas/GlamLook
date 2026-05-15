@@ -1,6 +1,7 @@
 const db = require('../config/database');
 const { sendWhatsApp } = require('../services/whatsapp');
 const { sendPushNotification } = require('../services/notifications');
+const { sendEmail, appointmentBookedEmail } = require('../services/email');
 
 exports.getArtists = async (req, res) => {
   try {
@@ -69,7 +70,7 @@ exports.book = async (req, res) => {
 
   // Verify artist exists
   const artistRow = await db.query(
-    'SELECT id, name, phone, expo_push_token FROM artists WHERE id=$1 AND is_active=TRUE',
+    'SELECT id, name, email, phone, expo_push_token FROM artists WHERE id=$1 AND is_active=TRUE',
     [artist_id]
   );
   const artist = artistRow.rows[0];
@@ -118,13 +119,41 @@ exports.book = async (req, res) => {
   const appointment = result.rows[0];
   res.status(201).json(appointment);
 
-  // WhatsApp + Push notification to artist (non-blocking)
-  const date = new Date(scheduled_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  // Notifications to artist + confirmation to customer (all non-blocking)
+  const dateStr = new Date(scheduled_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   const serviceName = serviceInfo?.name || 'Appointment';
-  const waMsg = `📅 *New Booking - GlamBook*\n\nCustomer: ${customer.name}\nPhone: ${customer.phone || 'N/A'}\nService: ${serviceName}\nDate & Time: ${date}${location ? '\nLocation: ' + location : ''}${notes ? '\nNotes: ' + notes : ''}`;
 
+  // WhatsApp to artist
+  const waMsg = `📅 *New Booking - GlamBook*\n\nCustomer: ${customer.name}\nPhone: ${customer.phone || 'N/A'}\nService: ${serviceName}\nDate & Time: ${dateStr}${location ? '\nLocation: ' + location : ''}${notes ? '\nNotes: ' + notes : ''}`;
   sendWhatsApp(artist.phone, waMsg).catch(() => {});
-  sendPushNotification(artist.expo_push_token, '📅 New Customer Booking', `${customer.name} — ${serviceName} on ${date}`, { appointmentId: appointment.id }).catch(() => {});
+
+  // Push notification to artist
+  sendPushNotification(artist.expo_push_token, '📅 New Customer Booking', `${customer.name} — ${serviceName} on ${dateStr}`, { appointmentId: appointment.id }).catch(() => {});
+
+  // Email to artist about new booking
+  if (artist.email) {
+    const artistEmailHtml = appointmentBookedEmail({
+      customerName: customer.name,
+      artistName: artist.name,
+      serviceName,
+      date: dateStr,
+      location: location || null,
+      price: serviceInfo?.price || null,
+    }).replace('Hi <strong>', 'New booking from <strong>').replace('Your appointment has been booked!', `A customer has booked an appointment with you.`);
+    sendEmail(artist.email, `📅 New Booking: ${customer.name} — ${serviceName}`, artistEmailHtml).catch(() => {});
+  }
+
+  // Confirmation email to customer
+  if (customer.email) {
+    sendEmail(customer.email, `✅ Booking Confirmed — ${serviceName} with ${artist.name}`, appointmentBookedEmail({
+      customerName: customer.name,
+      artistName: artist.name,
+      serviceName,
+      date: dateStr,
+      location: location || null,
+      price: serviceInfo?.price || null,
+    })).catch(() => {});
+  }
 };
 
 exports.getMyAppointments = async (req, res) => {
