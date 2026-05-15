@@ -94,7 +94,9 @@ export const customerAuthAPI = {
 };
 
 export const customerBookingAPI = {
-  getServices: () => customerApi.get('/customer/services'),
+  getArtists: () => customerApi.get('/customer/artists'),
+  getArtistPortfolio: (id) => customerApi.get(`/customer/artists/${id}/portfolio`),
+  getServices: (artistId) => customerApi.get('/customer/services', artistId ? { params: { artist_id: artistId } } : undefined),
   book: (data) => {
     const isFormData = data instanceof FormData;
     return customerApi.post('/customer/book', data, isFormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : {});

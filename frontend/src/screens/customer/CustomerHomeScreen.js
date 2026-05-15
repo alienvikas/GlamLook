@@ -56,6 +56,7 @@ export default function CustomerHomeScreen({ navigation }) {
           </View>
           <View style={styles.apptInfo}>
             <Text style={styles.apptService}>{item.service_name || 'Appointment'}</Text>
+            {item.artist_name ? <Text style={styles.apptArtist}><Ionicons name="person-outline" size={11} /> {item.artist_name}</Text> : null}
             <Text style={styles.apptTime}>{new Date(item.scheduled_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</Text>
             {item.location ? <Text style={styles.apptLoc} numberOfLines={1}><Ionicons name="location-outline" size={12} /> {item.location}</Text> : null}
           </View>
@@ -116,10 +117,10 @@ export default function CustomerHomeScreen({ navigation }) {
       </LinearGradient>
 
       {/* Book button */}
-      <TouchableOpacity style={styles.bookBtn} onPress={() => navigation.navigate('CustomerBook')} activeOpacity={0.85}>
+      <TouchableOpacity style={styles.bookBtn} onPress={() => navigation.navigate('ArtistList')} activeOpacity={0.85}>
         <LinearGradient colors={[Colors.primary, Colors.secondary]} style={styles.bookBtnGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
-          <Ionicons name="add-circle" size={22} color={Colors.white} />
-          <Text style={styles.bookBtnText}>Book New Appointment</Text>
+          <Ionicons name="search" size={22} color={Colors.white} />
+          <Text style={styles.bookBtnText}>Find an Artist & Book</Text>
           <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.7)" />
         </LinearGradient>
       </TouchableOpacity>
@@ -166,6 +167,7 @@ const styles = StyleSheet.create({
   apptMonth: { fontSize: FontSize.xs, color: Colors.primary, fontWeight: '600' },
   apptInfo: { flex: 1 },
   apptService: { fontSize: FontSize.md, fontWeight: '700', color: Colors.text },
+  apptArtist: { fontSize: FontSize.xs, color: Colors.primary, fontWeight: '600', marginTop: 1 },
   apptTime: { fontSize: FontSize.sm, color: Colors.textSecondary, marginTop: 2 },
   apptLoc: { fontSize: FontSize.xs, color: Colors.textLight, marginTop: 2 },
   rightCol: { alignItems: 'flex-end', gap: 6 },

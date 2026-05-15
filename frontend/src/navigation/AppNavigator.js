@@ -28,6 +28,8 @@ import ReviewsScreen from '../screens/reviews/ReviewsScreen';
 import CustomerHomeScreen from '../screens/customer/CustomerHomeScreen';
 import CustomerBookScreen from '../screens/customer/CustomerBookScreen';
 import CustomerFeedbackScreen from '../screens/customer/CustomerFeedbackScreen';
+import ArtistListScreen from '../screens/customer/ArtistListScreen';
+import ArtistProfileScreen from '../screens/customer/ArtistProfileScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -99,6 +101,8 @@ export default function AppNavigator() {
         ) : role === 'customer' ? (
           <>
             <Stack.Screen name="CustomerHome" component={CustomerHomeScreen} />
+            <Stack.Screen name="ArtistList" component={ArtistListScreen} />
+            <Stack.Screen name="ArtistProfile" component={ArtistProfileScreen} />
             <Stack.Screen name="CustomerBook" component={CustomerBookScreen} />
             <Stack.Screen name="CustomerFeedback" component={CustomerFeedbackScreen} />
           </>

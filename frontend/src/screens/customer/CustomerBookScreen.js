@@ -81,9 +81,12 @@ function ServiceDropdown({ services, selected, onSelect }) {
 }
 
 // ── Main Screen ──────────────────────────────────────────────────────────────
-export default function CustomerBookScreen({ navigation }) {
+export default function CustomerBookScreen({ route, navigation }) {
+  const artist = route.params?.artist || null;
+  const preselectedService = route.params?.preselectedService || null;
+
   const [services, setServices] = useState([]);
-  const [selectedService, setSelectedService] = useState(null);
+  const [selectedService, setSelectedService] = useState(preselectedService);
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
@@ -94,8 +97,8 @@ export default function CustomerBookScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    customerBookingAPI.getServices().then(setServices).catch(() => {});
-  }, []);
+    customerBookingAPI.getServices(artist?.id).then(setServices).catch(() => {});
+  }, [artist?.id]);
 
   const pickPhoto = () => {
     Alert.alert('Add Photo', 'Choose how to add your photo', [
@@ -133,6 +136,8 @@ export default function CustomerBookScreen({ navigation }) {
   const handleBook = async () => {
     if (!selectedService) return Alert.alert('Error', 'Please select a service');
     if (date <= new Date()) return Alert.alert('Error', 'Please select a future date and time');
+    const artistId = artist?.id || selectedService?.artist_id;
+    if (!artistId) return Alert.alert('Error', 'Could not determine the artist. Please go back and select an artist.');
     setLoading(true);
     try {
       let payload;
@@ -140,6 +145,7 @@ export default function CustomerBookScreen({ navigation }) {
         const ext = customerPhoto.uri.split('.').pop().toLowerCase();
         const mime = ext === 'jpg' ? 'image/jpeg' : `image/${ext}`;
         const fd = new FormData();
+        fd.append('artist_id', String(artistId));
         fd.append('service_id', String(selectedService.id));
         fd.append('scheduled_at', date.toISOString());
         fd.append('duration', String(selectedService.duration_minutes || 60));
@@ -149,6 +155,7 @@ export default function CustomerBookScreen({ navigation }) {
         payload = fd;
       } else {
         payload = {
+          artist_id: artistId,
           service_id: selectedService.id,
           scheduled_at: date.toISOString(),
           duration: selectedService.duration_minutes || 60,
@@ -169,7 +176,7 @@ export default function CustomerBookScreen({ navigation }) {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
-      <Header title="Book Appointment" onBack={() => navigation.goBack()} />
+      <Header title={artist ? `Book with ${artist.name.split(' ')[0]}` : 'Book Appointment'} onBack={() => navigation.goBack()} />
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
 
         {/* Service dropdown */}

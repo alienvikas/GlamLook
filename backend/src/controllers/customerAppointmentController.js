@@ -2,24 +2,87 @@ const db = require('../config/database');
 const { sendWhatsApp } = require('../services/whatsapp');
 const { sendPushNotification } = require('../services/notifications');
 
-exports.book = async (req, res) => {
-  const { service_id, scheduled_at, duration, location, notes } = req.body;
-  if (!scheduled_at || !duration) return res.status(400).json({ error: 'scheduled_at and duration are required' });
-
-  // Derive artist from the booked service; fall back to any artist
-  let artist;
-  if (service_id) {
-    const svcArtist = await db.query(
-      'SELECT a.id, a.name, a.phone, a.expo_push_token FROM artists a JOIN services s ON s.artist_id=a.id WHERE s.id=$1 LIMIT 1',
-      [service_id]
+exports.getArtists = async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT a.id, a.name, a.bio, a.avatar_url, a.specialties, a.instagram, a.facebook, a.website,
+              COALESCE(ROUND(AVG(f.rating)::numeric, 1), 0)::float AS avg_rating,
+              COUNT(DISTINCT f.id)::int AS total_reviews,
+              COUNT(DISTINCT s.id)::int AS service_count
+       FROM artists a
+       LEFT JOIN feedback f ON f.artist_id = a.id
+       LEFT JOIN services s ON s.artist_id = a.id AND s.is_active IS NOT FALSE
+       WHERE a.is_active = TRUE
+       GROUP BY a.id
+       ORDER BY a.name`
     );
-    artist = svcArtist.rows[0];
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
-  if (!artist) {
-    const fallback = await db.query('SELECT id, name, phone, expo_push_token FROM artists LIMIT 1');
-    artist = fallback.rows[0];
+};
+
+exports.getArtistPortfolio = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await db.query(
+      `SELECT id, title, description, image_url, category, created_at
+       FROM portfolio
+       WHERE artist_id=$1
+       ORDER BY created_at DESC`,
+      [id]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
-  if (!artist) return res.status(404).json({ error: 'No artist found' });
+};
+
+exports.getServices = async (req, res) => {
+  try {
+    const { artist_id } = req.query;
+    const params = [];
+    let where = 'WHERE s.is_active IS NOT FALSE';
+    if (artist_id) {
+      params.push(artist_id);
+      where += ` AND s.artist_id=$${params.length}`;
+    }
+    const result = await db.query(
+      `SELECT s.id, s.name, s.price, s.duration AS duration_minutes, s.description,
+              a.id AS artist_id, a.name AS artist_name, a.avatar_url AS artist_avatar
+       FROM services s
+       JOIN artists a ON a.id = s.artist_id
+       ${where}
+       ORDER BY s.name`,
+      params
+    );
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.book = async (req, res) => {
+  const { service_id, scheduled_at, duration, location, notes, artist_id } = req.body;
+  if (!scheduled_at || !duration) return res.status(400).json({ error: 'scheduled_at and duration are required' });
+  if (!artist_id) return res.status(400).json({ error: 'artist_id is required' });
+
+  // Verify artist exists
+  const artistRow = await db.query(
+    'SELECT id, name, phone, expo_push_token FROM artists WHERE id=$1 AND is_active=TRUE',
+    [artist_id]
+  );
+  const artist = artistRow.rows[0];
+  if (!artist) return res.status(404).json({ error: 'Artist not found' });
+
+  // Verify service belongs to this artist (if provided)
+  if (service_id) {
+    const svcCheck = await db.query(
+      'SELECT id FROM services WHERE id=$1 AND artist_id=$2',
+      [service_id, artist_id]
+    );
+    if (!svcCheck.rows.length) return res.status(400).json({ error: 'Service does not belong to this artist' });
+  }
 
   // Get customer info
   const custRow = await db.query('SELECT id, name, email, phone FROM customers WHERE id=$1', [req.customerId]);
@@ -66,9 +129,11 @@ exports.book = async (req, res) => {
 
 exports.getMyAppointments = async (req, res) => {
   const result = await db.query(
-    `SELECT a.*, s.name AS service_name, s.price AS service_price, a.customer_photo_url
+    `SELECT a.*, s.name AS service_name, s.price AS service_price, a.customer_photo_url,
+            ar.name AS artist_name, ar.avatar_url AS artist_avatar
      FROM appointments a
      LEFT JOIN services s ON s.id = a.service_id
+     LEFT JOIN artists ar ON ar.id = a.artist_id
      WHERE a.customer_id=$1
      ORDER BY a.scheduled_at DESC`,
     [req.customerId]
@@ -110,15 +175,4 @@ exports.getMyFeedback = async (req, res) => {
     [req.customerId]
   );
   res.json(result.rows.map((r) => r.appointment_id));
-};
-
-exports.getServices = async (req, res) => {
-  try {
-    const result = await db.query(
-      'SELECT id, name, price, duration AS duration_minutes, description FROM services WHERE is_active IS NOT FALSE ORDER BY name'
-    );
-    res.json(result.rows);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
 };
