@@ -9,13 +9,14 @@ function getTransporter() {
   }
   return nodemailer.createTransport({
     host: 'smtp.gmail.com',
-    port: 587,
-    secure: false,
+    port: 465,
+    secure: true,
     auth: {
       user,
-      pass: pass.replace(/\s/g, ''), // strip spaces from app password
+      pass: pass.replace(/\s/g, ''),
     },
     tls: { rejectUnauthorized: false },
+    family: 4, // force IPv4 — Render free tier blocks IPv6 SMTP
   });
 }
 
