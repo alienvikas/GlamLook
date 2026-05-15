@@ -1,39 +1,28 @@
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
-function getTransporter() {
-  const user = process.env.EMAIL_USER;
-  const pass = process.env.EMAIL_PASS;
-  if (!user || !pass) {
-    console.error('Email not configured: EMAIL_USER or EMAIL_PASS missing');
+function getClient() {
+  if (!process.env.RESEND_API_KEY) {
+    console.error('Email not configured: RESEND_API_KEY missing');
     return null;
   }
-  return nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
-    auth: {
-      user,
-      pass: pass.replace(/\s/g, ''),
-    },
-    tls: { rejectUnauthorized: false },
-    family: 4, // force IPv4 — Render free tier blocks IPv6 SMTP
-  });
+  return new Resend(process.env.RESEND_API_KEY);
 }
 
 async function sendEmail(to, subject, html) {
   if (!to) return;
-  const transporter = getTransporter();
-  if (!transporter) return;
+  const client = getClient();
+  if (!client) return;
   try {
-    const info = await transporter.sendMail({
-      from: `"GlamBook Beauty" <${process.env.EMAIL_USER}>`,
+    const { data, error } = await client.emails.send({
+      from: 'GlamBook Beauty <onboarding@resend.dev>',
       to,
       subject,
       html,
     });
-    console.log('Email sent to', to, '| messageId:', info.messageId);
+    if (error) throw new Error(error.message);
+    console.log('Email sent to', to, '| id:', data.id);
   } catch (err) {
-    console.error('Email error:', err.code, '-', err.message);
+    console.error('Email error:', err.message);
   }
 }
 
