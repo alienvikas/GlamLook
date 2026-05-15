@@ -112,8 +112,8 @@ exports.book = async (req, res) => {
   const customerPhotoUrl = req.file ? req.file.path : null;
 
   const result = await db.query(
-    `INSERT INTO appointments (artist_id, client_id, customer_id, service_id, scheduled_at, duration, location, notes, total_amount, booked_by, customer_photo_url)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'customer',$10) RETURNING *`,
+    `INSERT INTO appointments (artist_id, client_id, customer_id, service_id, scheduled_at, duration, location, notes, total_amount, booked_by, customer_photo_url, is_seen_by_artist)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'customer',$10,FALSE) RETURNING *`,
     [artist.id, clientId, customer.id, service_id || null, scheduled_at, duration, location || null, notes || null, serviceInfo?.price || null, customerPhotoUrl]
   );
   const appointment = result.rows[0];

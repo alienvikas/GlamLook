@@ -21,6 +21,9 @@ const db = require('./config/database');
 db.query(`ALTER TABLE appointments ADD COLUMN IF NOT EXISTS customer_photo_url TEXT`).catch(() => {});
 // Ensure existing services are visible (fix NULL is_active)
 db.query(`UPDATE services SET is_active=TRUE WHERE is_active IS NULL`).catch(() => {});
+// Add is_seen_by_artist column for in-app notifications
+db.query(`ALTER TABLE appointments ADD COLUMN IF NOT EXISTS is_seen_by_artist BOOLEAN DEFAULT TRUE`).catch(() => {});
+db.query(`UPDATE appointments SET is_seen_by_artist=FALSE WHERE booked_by='customer' AND is_seen_by_artist IS NULL`).catch(() => {});
 // Create feedback table
 db.query(`CREATE TABLE IF NOT EXISTS feedback (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

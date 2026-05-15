@@ -163,6 +163,35 @@ exports.getToday = async (req, res) => {
   res.json(result.rows);
 };
 
+exports.getUnseenCount = async (req, res) => {
+  const result = await db.query(
+    `SELECT COUNT(*) AS count FROM appointments WHERE artist_id=$1 AND booked_by='customer' AND is_seen_by_artist=FALSE`,
+    [req.artistId]
+  );
+  res.json({ count: parseInt(result.rows[0].count) });
+};
+
+exports.getUnseenBookings = async (req, res) => {
+  const result = await db.query(
+    `SELECT a.id, a.scheduled_at, a.created_at, c.name AS client_name, s.name AS service_name
+     FROM appointments a
+     JOIN clients c ON c.id = a.client_id
+     LEFT JOIN services s ON s.id = a.service_id
+     WHERE a.artist_id=$1 AND a.booked_by='customer' AND a.is_seen_by_artist=FALSE
+     ORDER BY a.created_at DESC`,
+    [req.artistId]
+  );
+  res.json(result.rows);
+};
+
+exports.markSeen = async (req, res) => {
+  await db.query(
+    `UPDATE appointments SET is_seen_by_artist=TRUE WHERE artist_id=$1 AND booked_by='customer' AND is_seen_by_artist=FALSE`,
+    [req.artistId]
+  );
+  res.json({ ok: true });
+};
+
 exports.getFeedback = async (req, res) => {
   const result = await db.query(
     `SELECT f.*, cu.name AS customer_name, s.name AS service_name, a.scheduled_at

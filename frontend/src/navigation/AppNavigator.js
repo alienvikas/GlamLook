@@ -1,12 +1,14 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { ActivityIndicator, View } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 
 import { useAuth } from '../context/AuthContext';
 import { Colors } from '../theme/colors';
+import { appointmentAPI } from '../services/api';
 
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
@@ -35,6 +37,21 @@ const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 function MainTabs() {
+  const [unseenCount, setUnseenCount] = useState(0);
+
+  const fetchUnseen = useCallback(async () => {
+    try {
+      const data = await appointmentAPI.getUnseenCount();
+      setUnseenCount(data.count || 0);
+    } catch {}
+  }, []);
+
+  useFocusEffect(useCallback(() => {
+    fetchUnseen();
+    const interval = setInterval(fetchUnseen, 30000);
+    return () => clearInterval(interval);
+  }, [fetchUnseen]));
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -64,7 +81,12 @@ function MainTabs() {
     >
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
       <Tab.Screen name="Clients" component={ClientsScreen} />
-      <Tab.Screen name="Appointments" component={AppointmentsScreen} />
+      <Tab.Screen
+        name="Appointments"
+        component={AppointmentsScreen}
+        options={{ tabBarBadge: unseenCount > 0 ? unseenCount : undefined }}
+        listeners={{ tabPress: () => { setUnseenCount(0); appointmentAPI.markSeen().catch(() => {}); } }}
+      />
       <Tab.Screen name="Reviews" component={ReviewsScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>

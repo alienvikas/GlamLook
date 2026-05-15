@@ -44,6 +44,9 @@ export const appointmentAPI = {
   create: (data) => api.post('/appointments', data),
   update: (id, data) => api.put(`/appointments/${id}`, data),
   cancel: (id) => api.delete(`/appointments/${id}`),
+  getUnseenCount: () => api.get('/appointments/unseen-count'),
+  getUnseen: () => api.get('/appointments/unseen'),
+  markSeen: () => api.put('/appointments/mark-seen'),
 };
 
 export const serviceAPI = {

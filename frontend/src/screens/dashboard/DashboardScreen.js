@@ -7,7 +7,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { dashboardAPI } from '../../services/api';
+import { dashboardAPI, appointmentAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import Card from '../../components/Card';
 import StatusBadge from '../../components/StatusBadge';
@@ -29,12 +29,17 @@ export default function DashboardScreen({ navigation }) {
   const { artist } = useAuth();
   const insets = useSafeAreaInsets();
   const [stats, setStats] = useState(null);
+  const [newBookings, setNewBookings] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     try {
-      const data = await dashboardAPI.getStats();
+      const [data, unseen] = await Promise.all([
+        dashboardAPI.getStats(),
+        appointmentAPI.getUnseen(),
+      ]);
       setStats(data);
+      setNewBookings(unseen);
     } catch {}
   }, []);
 
@@ -72,6 +77,33 @@ export default function DashboardScreen({ navigation }) {
           <StatCard icon="cash" label="This Month" value={stats ? `₹${parseFloat(stats.monthly_revenue).toLocaleString()}` : '—'} color={Colors.success} />
           <StatCard icon="star" label="Services" value="Active" color={Colors.gold} />
         </View>
+
+        {/* New customer bookings notification */}
+        {newBookings.length > 0 && (
+          <TouchableOpacity
+            style={styles.notifCard}
+            activeOpacity={0.85}
+            onPress={() => {
+              appointmentAPI.markSeen().catch(() => {});
+              setNewBookings([]);
+              navigation.navigate('Appointments');
+            }}
+          >
+            <View style={styles.notifIcon}>
+              <Ionicons name="notifications" size={22} color={Colors.white} />
+            </View>
+            <View style={styles.notifInfo}>
+              <Text style={styles.notifTitle}>
+                {newBookings.length} New Booking{newBookings.length > 1 ? 's' : ''}!
+              </Text>
+              <Text style={styles.notifSub} numberOfLines={1}>
+                {newBookings[0].client_name} — {newBookings[0].service_name || 'Appointment'}
+                {newBookings.length > 1 ? ` +${newBookings.length - 1} more` : ''}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={Colors.primary} />
+          </TouchableOpacity>
+        )}
 
         {/* GlamAI Banner */}
         <TouchableOpacity style={styles.aiBanner} onPress={() => navigation.navigate('AIAssistant')} activeOpacity={0.85}>
@@ -187,6 +219,21 @@ const styles = StyleSheet.create({
   },
   actionLabel: { fontSize: 10, color: Colors.text, textAlign: 'center', fontWeight: '600' },
 
+  notifCard: {
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
+    backgroundColor: Colors.white, borderRadius: BorderRadius.lg,
+    padding: Spacing.md, marginBottom: Spacing.md,
+    borderLeftWidth: 4, borderLeftColor: Colors.primary,
+    elevation: 3, shadowColor: Colors.primary, shadowOpacity: 0.15,
+    shadowOffset: { width: 0, height: 2 }, shadowRadius: 6,
+  },
+  notifIcon: {
+    width: 42, height: 42, borderRadius: 21,
+    backgroundColor: Colors.primary, alignItems: 'center', justifyContent: 'center',
+  },
+  notifInfo: { flex: 1 },
+  notifTitle: { fontSize: FontSize.md, fontWeight: '800', color: Colors.text },
+  notifSub: { fontSize: FontSize.sm, color: Colors.textSecondary, marginTop: 2 },
   aiBanner: { marginBottom: Spacing.md, borderRadius: BorderRadius.lg, overflow: 'hidden', elevation: 3, shadowColor: Colors.secondary, shadowOpacity: 0.3, shadowOffset: { width: 0, height: 2 }, shadowRadius: 6 },
   aiBannerGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: Spacing.md, paddingVertical: 14 },
   aiBannerLeft: { flex: 1 },
