@@ -123,12 +123,19 @@ exports.book = async (req, res) => {
   const dateStr = new Date(scheduled_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   const serviceName = serviceInfo?.name || 'Appointment';
 
+  console.log(`[book] Sending notifications — artist: ${artist.name} (${artist.email}, ${artist.phone}), customer: ${customer.name} (${customer.email})`);
+
   // WhatsApp to artist
-  const waMsg = `📅 *New Booking - GlamBook*\n\nCustomer: ${customer.name}\nPhone: ${customer.phone || 'N/A'}\nService: ${serviceName}\nDate & Time: ${dateStr}${location ? '\nLocation: ' + location : ''}${notes ? '\nNotes: ' + notes : ''}`;
-  sendWhatsApp(artist.phone, waMsg).catch(() => {});
+  if (artist.phone) {
+    const waMsg = `📅 *New Booking - GlamBook*\n\nCustomer: ${customer.name}\nPhone: ${customer.phone || 'N/A'}\nService: ${serviceName}\nDate & Time: ${dateStr}${location ? '\nLocation: ' + location : ''}${notes ? '\nNotes: ' + notes : ''}`;
+    sendWhatsApp(artist.phone, waMsg).catch((e) => console.error('[book] WhatsApp error:', e.message));
+  } else {
+    console.warn('[book] Artist has no phone — WhatsApp skipped');
+  }
 
   // Push notification to artist
-  sendPushNotification(artist.expo_push_token, '📅 New Customer Booking', `${customer.name} — ${serviceName} on ${dateStr}`, { appointmentId: appointment.id }).catch(() => {});
+  sendPushNotification(artist.expo_push_token, '📅 New Customer Booking', `${customer.name} — ${serviceName} on ${dateStr}`, { appointmentId: appointment.id })
+    .catch((e) => console.error('[book] Push error:', e.message));
 
   // Email to artist about new booking
   if (artist.email) {
@@ -139,8 +146,11 @@ exports.book = async (req, res) => {
       date: dateStr,
       location: location || null,
       price: serviceInfo?.price || null,
-    }).replace('Hi <strong>', 'New booking from <strong>').replace('Your appointment has been booked!', `A customer has booked an appointment with you.`);
-    sendEmail(artist.email, `📅 New Booking: ${customer.name} — ${serviceName}`, artistEmailHtml).catch(() => {});
+    }).replace('Hi <strong>', 'New booking from <strong>').replace('Your appointment has been booked!', 'A customer has booked an appointment with you.');
+    sendEmail(artist.email, `📅 New Booking: ${customer.name} — ${serviceName}`, artistEmailHtml)
+      .catch((e) => console.error('[book] Artist email error:', e.message));
+  } else {
+    console.warn('[book] Artist has no email — email skipped');
   }
 
   // Confirmation email to customer
@@ -152,7 +162,9 @@ exports.book = async (req, res) => {
       date: dateStr,
       location: location || null,
       price: serviceInfo?.price || null,
-    })).catch(() => {});
+    })).catch((e) => console.error('[book] Customer email error:', e.message));
+  } else {
+    console.warn('[book] Customer has no email — confirmation skipped');
   }
 };
 
